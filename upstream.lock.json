@@ -1,0 +1,16 @@
+{
+  "upstream_repository": "https://github.com/NanmiCoder/MediaCrawler",
+  "reviewed_at": "2026-11-13",
+  "reviewed_source": "main via public web source; minimal local adaptation",
+  "related_upstream_commit": "d594c20c13f46c368bfec133de3a4f1a97cd4d79",
+  "full_commit_snapshot_verified": false,
+  "real_account_smoke_test": "pending",
+  "dependencies": {
+    "playwright": "1.61.0",
+    "xhshow": "0.2.0"
+  },
+  "local_sha256": {
+    "xhs_research/mediacrawler_protocol.py": "3b8ab8046bf1fa8da3ef65ae28933ab3125ea0fd2b92268904e30d91603b100d",
+    "xhs_research/adapter.py": "34af2edc967b15c7c351ef98be15a4ee30e6d33fa60765a2f3b01bb4a57d36e5"
+  }
+}
