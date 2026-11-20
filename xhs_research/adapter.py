@@ -12,6 +12,7 @@ from urllib.parse import quote, urlparse
 from .errors import (AuthExpired, BrowserDisconnected, NetworkFailure, ProtocolError,
                      RiskBlocked, SetupError, StaleLink, Unavailable)
 from .mediacrawler_protocol import auth_request, comments_request, detail_request, search_request
+from .browser_diagnostics import record_restriction
 from .runtime import local_day
 from .validation import authenticated
 
@@ -105,6 +106,7 @@ class MediaCrawlerAdapter:
         self.config, self.store, self.clock = config, store, clock
         self.playwright = self.context = self.page = self.signer = None
         self.external_risk = False
+        self.browser_phase = "startup"
         self.login_cookie_before = None
         self.cookies = {}
 
@@ -144,6 +146,7 @@ class MediaCrawlerAdapter:
         host = urlparse(response.url).hostname or ""
         if (host == "xiaohongshu.com" or host.endswith(".xiaohongshu.com")) and response.status in {403, 429, 461, 471}:
             self.external_risk = True
+            record_restriction(self.config.state_dir, response, self.clock.now(), self.browser_phase)
 
     def _check_browser(self):
         if self.external_risk:
@@ -206,8 +209,16 @@ class MediaCrawlerAdapter:
             await response.dispose()
 
     async def check_auth(self):
-        data = await self._request(auth_request())
-        return authenticated(data)
+        previous = self.browser_phase
+        self.browser_phase = "auth_check"
+        try:
+            data = await self._request(auth_request())
+            result = authenticated(data)
+        finally:
+            self.browser_phase = previous
+        if result:
+            self.browser_phase = "collection"
+        return result
 
     async def search(self, keyword, page, search_id, sort):
         return await self._request(search_request(keyword, page, search_id, sort))
@@ -219,6 +230,7 @@ class MediaCrawlerAdapter:
         return await self._request(comments_request(note_id, token, cursor))
 
     async def show_login(self):
+        self.browser_phase = "login_page"
         self._check_browser()
         await self.sync_cookies()
         self.login_cookie_before = self.cookies.get("web_session")
