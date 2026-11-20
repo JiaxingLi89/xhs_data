@@ -1,17 +1,22 @@
 {
-  "keywords": ["母乳喂养"],
+  "keywords": [
+    "母乳喂养"
+  ],
   "sort": "general",
   "timezone": "Asia/Shanghai",
   "stage": "pilot",
   "target_notes": 1500,
   "pilot_notes": 50,
   "reviewed_notes": 0,
-  "daily_notes_pilot": 5,
-  "daily_notes_formal": 10,
-  "daily_requests_pilot": 30,
-  "daily_requests_formal": 60,
+  "daily_notes_pilot": null,
+  "daily_notes_formal": null,
+  "daily_requests_pilot": 700,
+  "daily_requests_formal": 700,
   "notes_per_run": 5,
-  "request_interval_seconds": [120, 300],
+  "request_interval_seconds": [
+    120,
+    300
+  ],
   "comments_per_note": 50,
   "max_comment_pages": 20,
   "candidate_low_watermark": 20,
@@ -20,6 +25,9 @@
   "run_timeout_seconds": 14400,
   "browser_channel": "chrome",
   "data_dir": "data",
-  "export_dir": "exports"
+  "export_dir": "exports",
+  "quota_mode": "daily",
+  "continuous_daily": true,
+  "requests_per_run": 30,
+  "rolling_requests_limit": 3000
 }
-

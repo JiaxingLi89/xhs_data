@@ -23,7 +23,10 @@ class BrowserDisconnected(NetworkFailure):
 
 
 class ProtocolError(CollectorError):
-    pass
+    def __init__(self, code, **diagnostic):
+        super().__init__(code)
+        self.diagnostic = {"code": code, **diagnostic}
+
 
 
 class Unavailable(CollectorError):

@@ -81,6 +81,47 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
         self.store.close()
         self.temp.cleanup()
 
+    async def test_business_error_records_safe_diagnostics_once(self):
+        self.adapter.context.request.response = Response({
+            "success": False, "code": -123, "msg": "SECRET_COOKIE",
+            "data": None, "token": "SECRET_TOKEN"})
+        with self.assertRaises(ProtocolError):
+            await self.gate.call("comments", self.adapter.check_auth)
+        diagnostic = self.store.get("last_protocol_error")
+        self.assertEqual(diagnostic["code"], "platform_business_error")
+        self.assertEqual(diagnostic["platform_code"], "-123")
+        self.assertEqual(diagnostic["http_status"], 200)
+        self.assertEqual(diagnostic["request_kind"], "comments")
+        self.assertNotIn("SECRET", json.dumps(diagnostic))
+        self.store.pause(self.clock.now(), "protocol_error")
+        self.store.pause(self.clock.now(), "protocol_error")
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM events").fetchone()[0], 1)
+        self.store.resume(self.clock.now())
+        self.store.pause(self.clock.now(), "protocol_error")
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM events WHERE code='protocol_error'").fetchone()[0], 2)
+
+    async def test_non_json_and_signing_failures_are_distinct(self):
+        self.adapter.context.request.response = Response("SECRET_HTML")
+        with self.assertRaises(ProtocolError) as caught:
+            await self.gate.call("comments", self.adapter.check_auth)
+        self.assertEqual(caught.exception.diagnostic["code"], "unexpected_response_format")
+        self.assertEqual(caught.exception.diagnostic["stage"], "response")
+        self.store.resume(self.clock.now())
+        def broken(**kwargs):
+            raise ValueError("SECRET_COOKIE")
+        self.adapter.signer.sign_headers_get = broken
+        with self.assertRaises(ProtocolError) as caught:
+            await self.gate.call("auth_check", self.adapter.check_auth)
+        self.assertEqual(caught.exception.diagnostic["stage"], "signing")
+        self.assertNotIn("SECRET", json.dumps(self.store.get("last_protocol_error")))
+
+    async def test_credential_inspection_is_local_and_requires_session_and_device(self):
+        self.assertTrue(await self.adapter.has_auth_credentials())
+        self.adapter.context.session = ""
+        self.assertFalse(await self.adapter.has_auth_credentials())
+        self.assertEqual(self.adapter.context.request.calls, [])
+        self.assertEqual(self.adapter.signer.calls, [])
+
     async def test_real_transport_reads_rotated_cookie_and_signs_after_wait(self):
         await self.gate.call("auth_check", self.adapter.check_auth)
         first = self.clock.now()

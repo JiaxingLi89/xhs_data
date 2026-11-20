@@ -20,8 +20,12 @@ class Config:
     reviewed_notes: int = 0
     daily_notes_pilot: int = 5
     daily_notes_formal: int = 10
-    daily_requests_pilot: int = 30
-    daily_requests_formal: int = 60
+    daily_requests_pilot: int = 300
+    daily_requests_formal: int = 300
+    quota_mode: str = "daily"
+    continuous_daily: bool = False
+    requests_per_run: int = 30
+    rolling_requests_limit: int = 3000
     notes_per_run: int = 5
     request_interval_seconds: list = field(default_factory=lambda: [120, 300])
     comments_per_note: int = 50
@@ -50,6 +54,10 @@ class Config:
             raise SetupError("配置文件无效，请检查 config.json 的字段和值。") from exc
 
     def validate(self):
+        if type(self.continuous_daily) is not bool or (self.continuous_daily and self.quota_mode != "daily"):
+            raise ValueError("continuous_daily requires daily quota mode")
+        if self.quota_mode not in {"daily", "rolling"}:
+            raise ValueError("quota_mode")
         if self.stage not in {"pilot", "formal"}:
             raise ValueError("stage")
         if self.sort not in {"general", "time_descending", "popularity_descending"}:
@@ -62,9 +70,12 @@ class Config:
         ZoneInfo(self.timezone)
         for name in ["target_notes", "pilot_notes", "daily_notes_pilot", "daily_notes_formal",
                      "daily_requests_pilot", "daily_requests_formal", "notes_per_run",
+                     "requests_per_run", "rolling_requests_limit",
                      "comments_per_note", "max_comment_pages", "candidate_low_watermark",
                      "network_retry_seconds", "login_wait_seconds", "run_timeout_seconds"]:
             value = getattr(self, name)
+            if name in {"daily_notes_pilot", "daily_notes_formal"} and value is None:
+                continue
             if type(value) is not int or value < 1:
                 raise ValueError(name)
         if type(self.reviewed_notes) is not int or self.reviewed_notes < 0:

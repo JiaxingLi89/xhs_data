@@ -3,11 +3,15 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
+from uuid import uuid4
+from .identity import IdentityStoreMixin, IDENTITY_SCHEMA
+from .promotion import SCHEMA as PROMOTION_SCHEMA, safe_classify
 from pathlib import Path
 
 from .errors import ProtocolError, StopRun
 from .mediacrawler_protocol import new_search_id
+from .runtime import local_day, next_midnight, process_lock
 
 
 SCHEMA = """
@@ -16,6 +20,7 @@ CREATE TABLE IF NOT EXISTS requests (
  id INTEGER PRIMARY KEY, day TEXT NOT NULL, at REAL NOT NULL, kind TEXT NOT NULL,
  note_id TEXT, outcome TEXT NOT NULL DEFAULT 'reserved');
 CREATE INDEX IF NOT EXISTS request_day ON requests(day);
+CREATE INDEX IF NOT EXISTS request_time ON requests(at);
 CREATE TABLE IF NOT EXISTS daily_notes (day TEXT, note_id TEXT, PRIMARY KEY(day,note_id));
 CREATE TABLE IF NOT EXISTS daily_search (day TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS slots (day TEXT, slot INTEGER, PRIMARY KEY(day,slot));
@@ -42,8 +47,8 @@ CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, at REAL NOT NULL, cod
 """
 
 
-class Store:
-    def __init__(self, directory):
+class Store(IdentityStoreMixin):
+    def __init__(self, directory, migration_locked=False):
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(directory, 0o700)
@@ -54,12 +59,41 @@ class Store:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.execute("PRAGMA busy_timeout=5000")
-        self.db.executescript(SCHEMA)
-        version = self.get("schema_version", 1)
-        if version != 1:
+        try:
+            has_meta = self.db.execute("SELECT 1 FROM sqlite_master WHERE name='meta'").fetchone()
+            version = self.get('schema_version', 1) if has_meta else 0
+            if version not in (0, 1, 2, 3):
+                raise StopRun('unsupported_database_version')
+            if version < 3:
+                with nullcontext() if migration_locked else process_lock(directory):
+                    # Recheck after acquiring the lock: another opener may have migrated.
+                    has_meta = self.db.execute("SELECT 1 FROM sqlite_master WHERE name='meta'").fetchone()
+                    version = self.get('schema_version', 1) if has_meta else 0
+                    if version not in (0, 1, 2, 3):
+                        raise StopRun('unsupported_database_version')
+                    if version < 3:
+                        if version in (1, 2):
+                            prefix = 'research.pre-identity-' if version == 1 else 'research.pre-promotion-'
+                            backup_path = directory / (prefix + uuid4().hex + '.sqlite3')
+                            backup = sqlite3.connect(str(backup_path))
+                            try:
+                                self.db.backup(backup)
+                            finally:
+                                backup.close()
+                            os.chmod(backup_path, 0o600)
+                        with self.transaction():
+                            for statement in (SCHEMA + IDENTITY_SCHEMA + PROMOTION_SCHEMA).split(';'):
+                                if statement.strip():
+                                    self.db.execute(statement)
+                            columns = {row[1] for row in self.db.execute('PRAGMA table_info(comments)')}
+                            for name, kind in [('commenter_user_id', 'TEXT'), ('commenter_ip_location', 'TEXT'),
+                                               ('identity_observed_at', 'REAL')]:
+                                if name not in columns:
+                                    self.db.execute('ALTER TABLE comments ADD COLUMN ' + name + ' ' + kind)
+                            self.set('schema_version', 3)
+        except BaseException:
             self.close()
-            raise StopRun("unsupported_database_version")
-        self.set("schema_version", 1)
+            raise
 
     def close(self):
         self.db.close()
@@ -86,7 +120,11 @@ class Store:
         self.db.execute("INSERT INTO events(at,code) VALUES(?,?)", (now, code))
 
     def pause(self, now, reason, until=0):
-        previous = self.get("pause", {})
+        previous = self.get("pause") or {}
+        if previous.get("reason") == reason:
+            if until > previous.get("until", 0):
+                self.set("pause", {**previous, "until": until})
+            return
         self.set("pause", {"reason": reason, "until": max(until, previous.get("until", 0)), "since": now})
         self.event(now, reason)
 
@@ -110,6 +148,35 @@ class Store:
     def count_requests(self, day):
         return self.db.execute("SELECT count(*) FROM requests WHERE day=?", (day,)).fetchone()[0]
 
+    def rolling_usage(self, now):
+        row = self.db.execute("SELECT count(*),min(at) FROM requests WHERE at>?", (now - 86400,)).fetchone()
+        outcomes = dict(self.db.execute("SELECT outcome,count(*) FROM requests WHERE at>? GROUP BY outcome", (now - 86400,)))
+        return {"used": row[0], "next_release_at": row[1] + 86400 if row[1] is not None else None,
+                "outcomes": outcomes}
+
+    def check_request_budget(self, now, day, config):
+        if config.quota_mode == "rolling":
+            if self.rolling_usage(now)["used"] >= config.rolling_requests_limit:
+                raise StopRun("rolling_request_limit")
+        elif self.count_requests(day) >= config.daily_requests:
+            raise StopRun("daily_request_limit")
+
+    def quota_status(self, now, config):
+        result = self.status(local_day(now, config.timezone))
+        usage = self.rolling_usage(now)
+        result.update(quota_mode=config.quota_mode, continuous_daily=config.continuous_daily,
+                      notes_per_run=None if config.continuous_daily else config.notes_per_run,
+                      requests_per_run=None if config.continuous_daily else config.requests_per_run,
+                      rolling_requests_limit=config.rolling_requests_limit if config.quota_mode == "rolling" else None,
+                      rolling_requests_used=usage["used"],
+                      rolling_requests_remaining=max(0, config.rolling_requests_limit - usage["used"]) if config.quota_mode == "rolling" else None,
+                      rolling_outcomes=usage["outcomes"], next_release_at=usage["next_release_at"])
+        if config.quota_mode == "daily":
+            result.update(daily_requests_limit=config.daily_requests,
+                          daily_requests_remaining=max(0, config.daily_requests-result['business_requests_today']),
+                          next_release_at=next_midnight(now, config.timezone))
+        return result
+
     def count_daily_notes(self, day):
         return self.db.execute("SELECT count(*) FROM daily_notes WHERE day=?", (day,)).fetchone()[0]
 
@@ -117,17 +184,12 @@ class Store:
         # Reserve BEFORE sending: a crash can under-use a budget, never erase it.
         with self.transaction():
             self.check_pause(now)
-            if self.count_requests(day) >= config.daily_requests:
-                raise StopRun("daily_request_limit")
+            self.check_request_budget(now, day, config)
             if note_id:
                 seen = self.db.execute("SELECT 1 FROM daily_notes WHERE day=? AND note_id=?", (day, note_id)).fetchone()
-                if not seen and self.count_daily_notes(day) >= config.daily_notes:
+                if config.quota_mode == "daily" and config.daily_notes is not None and not seen and self.count_daily_notes(day) >= config.daily_notes:
                     raise StopRun("daily_note_limit")
                 self.db.execute("INSERT OR IGNORE INTO daily_notes VALUES(?,?)", (day, note_id))
-            if kind == "search":
-                if self.search_used(day):
-                    raise StopRun("daily_search_limit")
-                self.db.execute("INSERT INTO daily_search VALUES(?)", (day,))
             row = self.db.execute("INSERT INTO requests(day,at,kind,note_id) VALUES(?,?,?,?)", (day, now, kind, note_id))
             self.set("next_request_at", next_request_at)
             return row.lastrowid
@@ -178,14 +240,17 @@ class Store:
             self.db.execute("UPDATE keywords SET page=page+1,exhausted=?,empty_pages=?,last_used=? WHERE keyword=? AND sort=?",
                             (int(not has_more or empty >= 2), empty, now, job["keyword"], job["sort"]))
 
-    def next_note(self, day, daily_limit):
-        if self.count_daily_notes(day) >= daily_limit:
+    def next_note(self, day, daily_limit=None):
+        if daily_limit is not None and self.count_daily_notes(day) >= daily_limit:
             return self.db.execute("SELECT * FROM notes WHERE state IN ('pending','comments') AND note_id IN (SELECT note_id FROM daily_notes WHERE day=?) ORDER BY found_at,rowid LIMIT 1", (day,)).fetchone()
         return self.db.execute("SELECT * FROM notes WHERE state IN ('pending','comments') ORDER BY found_at,rowid LIMIT 1").fetchone()
 
     def save_detail(self, note_id, detail, now):
+        detail = {**detail, "identity_observed_at": now}
         self.db.execute("UPDATE notes SET detail=?,fetched_at=?,state='comments' WHERE note_id=?",
                         (json.dumps(detail, ensure_ascii=False), now, note_id))
+
+        safe_classify(self, note_id, detail, now)
 
     def mark_note(self, note_id, state, reason, now):
         self.db.execute("UPDATE notes SET state=?,reason=?,finished_at=? WHERE note_id=?", (state, reason, now, note_id))
@@ -198,12 +263,7 @@ class Store:
             for item in comments:
                 if count >= config.comments_per_note:
                     break
-                owner = self.db.execute("SELECT note_id FROM comments WHERE comment_id=?", (item["id"],)).fetchone()
-                if owner and owner[0] != note_id:
-                    raise ProtocolError("comment_belongs_to_another_note")
-                result = self.db.execute("INSERT OR IGNORE INTO comments VALUES(?,?,?,?,?,?)",
-                                        (item["id"], note_id, item["content"], str(item.get("time", "")), str(item.get("like_count", "")), now))
-                count += result.rowcount
+                count += self.upsert_comment(note_id, item, now)
             self.db.execute("INSERT OR IGNORE INTO cursors VALUES(?,?)", (note_id, requested_cursor))
             pages = self.db.execute("SELECT pages FROM notes WHERE note_id=?", (note_id,)).fetchone()[0] + 1
             if count >= config.comments_per_note:
@@ -238,6 +298,8 @@ class Store:
         traffic = self.db.execute("SELECT requests FROM page_traffic WHERE day=?", (day,)).fetchone()
         return {"day": day, "notes": counts, "business_requests_today": self.count_requests(day),
                 "notes_touched_today": self.count_daily_notes(day), "page_requests_today": traffic[0] if traffic else 0,
+                "identity_backfill": self.identity_status(),
+                "last_protocol_error": self.get("last_protocol_error"),
                 "pause": self.get("pause"), "network_until": self.get("network_until", 0),
                 "auth_waiting": self.get("auth_waiting", False), "next_request_at": self.get("next_request_at", 0)}
 

@@ -1,0 +1,633 @@
+﻿{
+    "root":  "C:\\codex project\\母乳喂养\\windows采集版",
+    "status":  "deleted_and_verified",
+    "confirmed":  [
+                      {
+                          "path":  ".DS_Store",
+                          "sha256":  "2BF1567819C8B9E47E90D5C50C779BABFCAA7BE814D52A6BB7395C95C85AE55E",
+                          "bytes":  8196,
+                          "signature":  "00-00-00-01-42-75-64-31"
+                      },
+                      {
+                          "path":  "._.DS_Store",
+                          "sha256":  "7D08A9FCFF3175F341E4FF3E2D36FAEFE08BAC19F65ED9B49B975BB5D13FF2AA",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._.gitignore",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._01_install.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._02_check.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._03_demo.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._04_login.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._05_run.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._06_status.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._07_export.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._08_browser.cmd",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._config.json",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._PACKAGE_FILES.txt",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._pyproject.toml",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._README.md",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._requirements-live.txt",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._scripts",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._SOURCE.json",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._tests",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._third_party",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._upstream.lock.json",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._VALIDATION.md",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "._xhs_research",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._adapter.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._browser_selection.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._cli.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._config.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._control.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._demo.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._engine.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._errors.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._export.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._mediacrawler_protocol.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._runtime.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._schedule.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._store.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._validation.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\._windows_env.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\.___init__.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\.___main__.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\.___pycache__",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._adapter.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._browser_selection.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._config.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._control.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._demo.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._engine.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._errors.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._export.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._mediacrawler_protocol.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._runtime.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._schedule.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._store.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._validation.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\._windows_env.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "xhs_research\\__pycache__\\.___init__.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "third_party\\._MediaCrawler.LICENSE",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "third_party\\._README.md",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\._test_collector.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\._test_install_browser.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\._test_transport.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\._test_windows_package.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\.___init__.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\.___pycache__",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\__pycache__\\._test_collector.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\__pycache__\\._test_install_browser.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\__pycache__\\._test_transport.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "tests\\__pycache__\\._test_windows_package.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "scripts\\._setup_live.py",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "scripts\\.___pycache__",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      },
+                      {
+                          "path":  "scripts\\__pycache__\\._setup_live.cpython-314.pyc",
+                          "sha256":  "43171E01EF7FCEC971DB552CD74381AD8188A4BC35977F077E894910E78A0D78",
+                          "bytes":  4096,
+                          "signature":  "00-05-16-07-00-02-00-00"
+                      }
+                  ],
+    "unconfirmed":  [
+
+                    ],
+    "protected":  [
+                      {
+                          "path":  ".gitignore",
+                          "sha256":  "650709577246C50CF658B43D48E799685973915DF4F9933FC8B4BE7042F1DDAE"
+                      },
+                      {
+                          "path":  "01_install.cmd",
+                          "sha256":  "A6059F7F7462A550B936A252DA5CB542A01FE43F975BC9BAF18D8757AA6C3F48"
+                      },
+                      {
+                          "path":  "02_check.cmd",
+                          "sha256":  "626BD21B3DAAEBD5A683E6B3F1BF3A1FBA2F313E35D9BE3FB2A720D2BB77F297"
+                      },
+                      {
+                          "path":  "03_demo.cmd",
+                          "sha256":  "6D94A3B1E2185580C3EF118877D34C3F9194C0125A03A691F6E080462EAC37D9"
+                      },
+                      {
+                          "path":  "04_login.cmd",
+                          "sha256":  "F934A902425E7CBEB9543F521F4D5E1F8B6C5F9054193EACC633E2F4035A5ACF"
+                      },
+                      {
+                          "path":  "05_run.cmd",
+                          "sha256":  "B0341C254F41720922F4EBA3A8548816026DDA2740D15E5E3AA455E5830C4BD3"
+                      },
+                      {
+                          "path":  "06_status.cmd",
+                          "sha256":  "999FA79DA146E5D4641FA830A05FBD0B5205325CE4C7C62953FAE89299777A90"
+                      },
+                      {
+                          "path":  "07_export.cmd",
+                          "sha256":  "5EA7DF5345191CD95A420A0A88FE11D8E8E604688CEA6B4352007BB3A573B6C4"
+                      },
+                      {
+                          "path":  "08_browser.cmd",
+                          "sha256":  "6A26BB6E6F137C8426103A7DBF79EEC1C5D1E531ADA5729C5D06DC30655FC6FA"
+                      },
+                      {
+                          "path":  "config.json",
+                          "sha256":  "79CC019C5D1E456F04166E1452F781B82157CC942740B35B98F45A0A0BE7E4B0"
+                      },
+                      {
+                          "path":  "PACKAGE_FILES.txt",
+                          "sha256":  "1FCC01F5E4C53AB3998FEECE7D3B9013ADD183BCB3E3AB130874CBA6804C2339"
+                      },
+                      {
+                          "path":  "pyproject.toml",
+                          "sha256":  "3F5BCB18BDE6EF6006CB53EE6AF86DEA4E58EDBD207F0ED53B22A370899F7E9C"
+                      },
+                      {
+                          "path":  "README.md",
+                          "sha256":  "98EF802827016F4AD478AFEE87B6F3C27CA8920B63DDB78F960F97C99511BF93"
+                      },
+                      {
+                          "path":  "requirements-live.txt",
+                          "sha256":  "D826B88AA90DC417744A391AB4AD11CDD777FFB54D8A6C55F1E68FCC36C6FFD2"
+                      },
+                      {
+                          "path":  "requirements-resolved.txt",
+                          "sha256":  "53284EF03FD60FA14D000E22F79ED6C0793FC4D8044CBEA8DE7E03FE68085252"
+                      },
+                      {
+                          "path":  "SOURCE.json",
+                          "sha256":  "12608BD1D3869D3317DA0FA8CD54750613DFC4A3282C63050645C64ED44C2645"
+                      },
+                      {
+                          "path":  "upstream.lock.json",
+                          "sha256":  "64ECF999F26769C1925C180BD237DB90C000989489885B030B002CDEB4F88910"
+                      },
+                      {
+                          "path":  "VALIDATION.md",
+                          "sha256":  "560C69F9CD04DDF67E34B0D8B5FD89B505F7A7A75F5DFBE81E5A3F34DD70865E"
+                      },
+                      {
+                          "path":  "xhs_research\\adapter.py",
+                          "sha256":  "CC3D6CB1A9099E518E42AE95418BB79BBED82DDC30E7A9710BF2E13B1FA36BF5"
+                      },
+                      {
+                          "path":  "xhs_research\\browser_selection.py",
+                          "sha256":  "955672037BFF698B9E1DF26DA521692122025642DC07124BC8E1E8498761524F"
+                      },
+                      {
+                          "path":  "xhs_research\\cli.py",
+                          "sha256":  "BCAC17A38CCF59D9996A60F40B620B234ACE2DDA6DFD0F4E91923409BBF7651E"
+                      },
+                      {
+                          "path":  "xhs_research\\config.py",
+                          "sha256":  "50FAF4D8D2D32B101E722390902F0E2DEA963CFA8E60BDB3BB8503B1FD67B3E4"
+                      },
+                      {
+                          "path":  "xhs_research\\control.py",
+                          "sha256":  "F3FD5AD0DA575536FDE37726DFBCA7A35DC654108B9491407CBEC235C53B40DC"
+                      },
+                      {
+                          "path":  "xhs_research\\demo.py",
+                          "sha256":  "54F6BF2207E105BCCB5BA6F7A52D60DF1CCB7CAAAA41AD1DCCFAC327E73B917C"
+                      },
+                      {
+                          "path":  "xhs_research\\engine.py",
+                          "sha256":  "40EF0438A01E27984356D024BF14AAABAD127011230FE39D06F8E2D593349B13"
+                      },
+                      {
+                          "path":  "xhs_research\\errors.py",
+                          "sha256":  "61B9F4D2CCEE69F92EBD6F7D6FE0BF14F98D679B6C06245BE1E5B1BF8F45F907"
+                      },
+                      {
+                          "path":  "xhs_research\\export.py",
+                          "sha256":  "B83EB6EA99E1837A330FBC79EA3F0C41A8635B517DBCB4BCA6A0F43F129D3BB8"
+                      },
+                      {
+                          "path":  "xhs_research\\mediacrawler_protocol.py",
+                          "sha256":  "3B8AB8046BF1FA8DA3EF65AE28933AB3125EA0FD2B92268904E30D91603B100D"
+                      },
+                      {
+                          "path":  "xhs_research\\runtime.py",
+                          "sha256":  "6E3FE59D06C2D920149DD454DB791704762F6BA6B09A6576FF460201118E93DE"
+                      },
+                      {
+                          "path":  "xhs_research\\schedule.py",
+                          "sha256":  "03C48C37200CEBAECC364E6A36CDF8B08FD046BA651E7A63BCA570CB102FFA42"
+                      },
+                      {
+                          "path":  "xhs_research\\store.py",
+                          "sha256":  "F82FF484925CAF76C11B5FBF23BAD082E840CCFBDF0F1E42FAE42D3F9AD363FB"
+                      },
+                      {
+                          "path":  "xhs_research\\validation.py",
+                          "sha256":  "BBF989B0EA7C7448BE381D2A7ACC8343EF03EBBC8FF65B3B466090F4AA37FFF4"
+                      },
+                      {
+                          "path":  "xhs_research\\windows_env.py",
+                          "sha256":  "546BA9F5378ABC894BAF10CE00D82EE406C39C64AB03792AB831C3C986857C35"
+                      },
+                      {
+                          "path":  "xhs_research\\__init__.py",
+                          "sha256":  "173BC6F4F102CB96522E406E82F5BF609D2661270FA12FBE245BB0A198F26575"
+                      },
+                      {
+                          "path":  "xhs_research\\__main__.py",
+                          "sha256":  "76FA916E93E0AE1A6C1BB51DCC0BCF289C014E9F760A47165F8A84401CCF41D7"
+                      },
+                      {
+                          "path":  "third_party\\MediaCrawler.LICENSE",
+                          "sha256":  "FB1BC55B2B1890836E007DD489B4FDB2382EB4CCEB7DD1EE1A1C0110E033B582"
+                      },
+                      {
+                          "path":  "third_party\\README.md",
+                          "sha256":  "3D62CB8547BD8484D50D9E01F04B4B130E478EC0D8AD980A14C8CE1711EB3CDE"
+                      },
+                      {
+                          "path":  "tests\\test_collection_policy.py",
+                          "sha256":  "F5DE3ECFA9AF78DDF85EAEDEA6EFEEBA6C55502BD13E4A1FAC74E16EDE5D25B3"
+                      },
+                      {
+                          "path":  "tests\\test_collector.py",
+                          "sha256":  "324FBFF62BB275C4FE15C26B54CC6BE46FEBAE2D821C42ED6F124E3B4697080A"
+                      },
+                      {
+                          "path":  "tests\\test_install_browser.py",
+                          "sha256":  "491787DD32F3F16804760F21286DF57A590FD54B2406FFA8D45FCBCDCEAB64B8"
+                      },
+                      {
+                          "path":  "tests\\test_transport.py",
+                          "sha256":  "EDAA51FB45BF2DB9D793101F609293F2804D8F4093F3BB86E02907771BD56CE2"
+                      },
+                      {
+                          "path":  "tests\\test_windows_package.py",
+                          "sha256":  "44F27053B59A6DEE1FC01A6E026279D3563239815D741957439DA1286BB65A72"
+                      },
+                      {
+                          "path":  "tests\\__init__.py",
+                          "sha256":  "01BA4719C80B6FE911B091A7C05124B64EEECE964E09C058EF8F9805DACA546B"
+                      },
+                      {
+                          "path":  "scripts\\setup_live.py",
+                          "sha256":  "28ED93471BC7B76CAD347160B837AA20C13CEFFF001E24C6FF3338AAA090A72B"
+                      }
+                  ],
+    "excluded":  [
+                     "_archive",
+                     "_old",
+                     "_backup",
+                     "_unused",
+                     "_trash",
+                     "old_versions",
+                     "backup",
+                     "temp",
+                     "tmp",
+                     ".codegraph",
+                     "node_modules",
+                     ".git",
+                     "dist",
+                     "build",
+                     ".venv"
+                 ],
+    "additional_exclusion":  "browser-profile*",
+    "deleted_count":  71,
+    "protected_files_verified":  44
+}

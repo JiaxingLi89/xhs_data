@@ -20,6 +20,7 @@ class DemoAdapter:
     def __init__(self, clock, authenticated=True):
         self.clock = clock
         self.authenticated = authenticated
+        self.credentials_present = True
         self.calls = []
         self.login_windows = 0
         self.reopens = 0
@@ -46,6 +47,9 @@ class DemoAdapter:
     async def sync_cookies(self):
         pass
 
+    async def has_auth_credentials(self):
+        return self.credentials_present
+
     async def check_auth(self):
         self.record("auth_check")
         if not self.authenticated:
@@ -59,6 +63,7 @@ class DemoAdapter:
     async def login_candidate(self):
         if self.login_succeeds:
             self.authenticated = True
+            self.credentials_present = True
             return True
         return False
 

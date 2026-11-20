@@ -1,3 +1,4 @@
+from .promotion import EXPORT_COLUMNS, annotation_fields
 import csv
 import json
 import re
@@ -9,7 +10,8 @@ from xml.sax.saxutils import escape
 
 NOTE_COLUMNS = ["note_id", "state", "title", "text", "type", "published_at", "tags", "liked_count",
                 "collected_count", "comment_count", "share_count", "found_at", "fetched_at", "finished_at", "stop_reason"]
-COMMENT_COLUMNS = ["comment_id", "note_id", "content", "published_at", "like_count", "fetched_at"]
+NOTE_COLUMNS += ['author_user_id', 'author_ip_location', 'identity_observed_at'] + EXPORT_COLUMNS
+COMMENT_COLUMNS = ["comment_id", "note_id", "content", "published_at", "like_count", "fetched_at", "commenter_user_id", "commenter_ip_location", "identity_observed_at"]
 SOURCE_COLUMNS = ["note_id", "keyword", "sort", "page", "rank", "discovered_at", "search_id", "sampling_version"]
 
 
@@ -23,6 +25,8 @@ def sheets(store):
     notes = []
     for row in store.db.execute("SELECT * FROM notes WHERE detail IS NOT NULL ORDER BY found_at,note_id"):
         data = json.loads(row["detail"])
+        annotation = store.db.execute('SELECT * FROM promotion_annotations WHERE note_id=?', (row['note_id'],)).fetchone()
+        data.update(annotation_fields(annotation, data))
         data.update({"note_id": row["note_id"], "state": row["state"], "found_at": row["found_at"],
                      "fetched_at": row["fetched_at"], "finished_at": row["finished_at"], "stop_reason": row["reason"]})
         data["tags"] = json.dumps(data.get("tags", []), ensure_ascii=False)
@@ -30,6 +34,23 @@ def sheets(store):
     comments = [[row[k] for k in COMMENT_COLUMNS] for row in store.db.execute("SELECT * FROM comments ORDER BY note_id,fetched_at,comment_id")]
     sources = [[row[k] for k in SOURCE_COLUMNS] for row in store.db.execute("SELECT * FROM sources ORDER BY discovered_at,note_id")]
     return {"notes": [NOTE_COLUMNS] + notes, "comments": [COMMENT_COLUMNS] + comments, "sources": [SOURCE_COLUMNS] + sources}
+
+
+def filtered_tables(tables):
+    note_header = tables['notes'][0]
+    id_index = note_header.index('note_id')
+    flag_index = note_header.index('exclude_confirmed_promotion')
+    included = {row[id_index] for row in tables['notes'][1:] if not row[flag_index]}
+    return {name: [rows[0]] + [row for row in rows[1:] if row[rows[0].index('note_id')] in included]
+            for name, rows in tables.items()}
+
+
+def write_tables(directory, tables):
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, rows in tables.items():
+        with (directory / (name + '.csv')).open('w', encoding='utf-8-sig', newline='') as stream:
+            csv.writer(stream).writerows([[csv_value(cell) for cell in row] for row in rows])
+    write_xlsx(directory / 'research.xlsx', tables)
 
 
 def column_name(index):
@@ -79,18 +100,44 @@ def export_data(store, config, now, demo=False):
     directory.mkdir(parents=True, mode=0o700)
     with store.transaction():
         tables = sheets(store)
-    for name, rows in tables.items():
-        with (directory / (name + ".csv")).open("w", encoding="utf-8-sig", newline="") as stream:
-            writer = csv.writer(stream)
-            writer.writerows([[csv_value(cell) for cell in row] for row in rows])
-    write_xlsx(directory / "research.xlsx", tables)
+        filtered = filtered_tables(tables)
+        identity_status = store.identity_status()
+        identity_jobs = [dict(row) for row in store.db.execute(
+            'SELECT note_id,state,phase,pages,reason,created_at,finished_at FROM identity_jobs ORDER BY created_at,note_id')]
+        comment_status = [dict(row) for row in store.db.execute(
+            "SELECT note_id,state,reason AS stop_reason,"
+            "CASE WHEN state='complete' AND reason='exhausted' THEN 1 ELSE 0 END AS interface_exhausted "
+            "FROM notes WHERE detail IS NOT NULL ORDER BY note_id")]
+    write_tables(directory, tables)
+    write_tables(directory / 'without_confirmed_promotion', filtered)
+    note_header = tables['notes'][0]
+    reviewed = sum(row[note_header.index('human_review_current')] for row in tables['notes'][1:])
+    versions = sorted({row[note_header.index('classification_version')] for row in tables['notes'][1:]
+                       if row[note_header.index('classification_version')]})
     manifest = {"created_at": now, "synthetic_demo": demo, "stage": config.stage,
                 "keywords": config.keywords, "sort": config.sort, "sampling_version": config.sampling_version,
-                "comments_per_note": config.comments_per_note, "counts": {k: len(v) - 1 for k, v in tables.items()},
+                "comments_per_note": config.comments_per_note, "max_comment_pages": config.max_comment_pages,
+                "comment_status": comment_status,
+                "identity_backfill": identity_status,
+                "schema_version": store.get('schema_version'),
+                "identity_jobs": identity_jobs,
+                "promotion_filter": {'criterion': '仅排除当前正文经人工确认为明确商业推广的笔记',
+                    'filtered_directory': 'without_confirmed_promotion',
+                    'filtered_counts': {k: len(v)-1 for k, v in filtered.items()},
+                    'excluded_note_count': len(tables['notes'])-len(filtered['notes']),
+                    'reviewed_note_count': reviewed,
+                    'review_coverage': reviewed / (len(tables['notes'])-1) if len(tables['notes']) > 1 else 0,
+                    'classification_versions': versions},
+                "counts": {k: len(v) - 1 for k, v in tables.items()},
                 "notes": ["平台搜索和评论返回顺序下的方便样本，不是随机样本或全量数据。",
                           "时间戳保留平台原值，采集时间为Unix秒；互动数保留原字符串。",
-                          "导出包含状态标记，分析时应筛选完整样本；未导出会话凭证和用户资料。",
+                          "一级评论按接口游标采集，保留 Mac 原有评论数量与页数上限及导出顺序。",
+                          "interface_exhausted仅表示接口当前返回结束，不保证覆盖全部历史评论；不采集二级回复。",
+                          "导出包含原始平台用户ID及接口返回的IP属地；不含昵称、头像和会话凭证。",
+                          "IP属地不是常住地；identity_observed_at为字段获取时间，补采值不代表最初采集时的属地。",
+                          "缺失字段留空；补采接口结束不代表字段全部补齐；分析时结合笔记状态与补采状态。",
+                          "推广初筛只标记文字线索，不证明广告真实性；未发现线索不等于真实分享。",
+                          "筛选版仅排除人工确认推广且复核对应当前正文的帖子；全量原始数据保留，完成状态仍需单独筛选。",
                           "CSV保留完整文本并转义公式前缀；XLSX单元格最多32767字符。"]}
     (directory / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return directory
-

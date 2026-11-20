@@ -17,6 +17,15 @@ def flag(data, key):
     return value
 
 
+def optional_text(value):
+    # Optional platform fields must never discard otherwise valid research data.
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def user_id(value):
+    return optional_text(value.get('user_id')) if isinstance(value, dict) else None
+
+
 def search_page(data):
     if not isinstance(data, dict) or not isinstance(data.get("items"), list):
         raise ProtocolError("missing_search_items")
@@ -53,6 +62,8 @@ def note_detail(data, expected_id):
         raise ProtocolError("invalid_interactions")
     return {"title": title, "text": desc, "type": card.get("type", ""),
             "published_at": card.get("time", ""),
+            "author_user_id": user_id(card.get("user")),
+            "author_ip_location": optional_text(card.get("ip_location")),
             "tags": [t["name"] for t in card.get("tag_list", []) if isinstance(t, dict) and isinstance(t.get("name"), str)],
             **{name: str(counts.get(name, "")) for name in ["liked_count", "collected_count", "comment_count", "share_count"]}}
 
@@ -71,6 +82,8 @@ def comments_page(data, expected_id):
         if row.get("note_id") and row["note_id"] != expected_id:
             raise ProtocolError("comment_note_mismatch")
         comments.append({"id": identifier(row.get("id")), "content": row["content"],
+                         "commenter_user_id": user_id(row.get("user_info")),
+                         "commenter_ip_location": optional_text(row.get("ip_location")),
                          "time": row.get("create_time", ""), "like_count": row.get("like_count", "")})
     return comments, cursor, has_more
 

@@ -19,6 +19,8 @@ def scheduled_slot(now, config, store):
 
 
 def create_schedule(config_path, config, install=False):
+    if config.quota_mode == "rolling":
+        raise SetupError("滚动配额模式由研究者手动开启批次，不创建或安装定时任务。")
     directory = config.root / "schedule"
     directory.mkdir(exist_ok=True, mode=0o700)
     # Prefer the prepared environment, never pin a missing Python executable.

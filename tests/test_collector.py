@@ -54,6 +54,67 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
         self.store.add_search_page(job, [{"id": "n%d" % n, "token": "SECRET_TOKEN", "source": "pc_search"} for n in range(count)], True,
                                    self.clock.now(), self.config.sampling_version)
 
+    async def test_bad_comment_page_keeps_checkpoint_and_resumes(self):
+        self.seed()
+        original = self.adapter.comments
+        async def malformed(note_id, token, cursor):
+            if cursor:
+                return {"comments": [], "has_more": "wrong"}
+            return await original(note_id, token, cursor)
+        self.adapter.comments = malformed
+        with self.assertRaises(ProtocolError):
+            await self.engine.run()
+        before = dict(self.store.db.execute("SELECT * FROM notes WHERE note_id='n0'").fetchone())
+        self.assertEqual(before["pages"], 1)
+        self.assertEqual(before["cursor"], "20")
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments").fetchone()[0], 20)
+        diagnostic = self.store.get("last_protocol_error")
+        self.assertEqual(diagnostic["stage"], "validation")
+        self.assertEqual(diagnostic["code"], "missing_pagination_flag")
+        self.store.pause(self.clock.now(), "protocol_error")
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM events WHERE code='protocol_error'").fetchone()[0], 1)
+        self.store.resume(self.clock.now())
+        self.adapter.comments = original
+        self.reset_session()
+        await self.run_until_stop()
+        after = dict(self.store.db.execute("SELECT * FROM notes WHERE note_id='n0'").fetchone())
+        self.assertEqual(after["state"], "complete")
+        self.assertEqual(after["detail"], before["detail"])
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments WHERE note_id='n0'").fetchone()[0], 50)
+
+    async def test_missing_credentials_skip_checks_but_preserve_wait_and_confirmation(self):
+        self.adapter.credentials_present = False
+        self.adapter.authenticated = False
+        start = self.clock.now()
+        self.store.set("next_request_at", start + 208)
+        messages = []
+        self.gate.progress = messages.append
+        await self.session.ensure_ready(manual=True)
+        self.assertEqual([c[1] for c in self.adapter.calls], ["login_page", "auth_check"])
+        self.assertEqual(self.adapter.calls[0][0], start + 208)
+        self.assertGreaterEqual(self.adapter.calls[1][0] - self.adapter.calls[0][0], 120)
+        self.assertEqual(self.store.count_requests(self.gate.day), 2)
+        self.assertFalse(self.store.get("auth_waiting"))
+        self.assertIn("等待打开登录页面", messages[0])
+        self.assertIn("208秒", messages[0])
+        self.assertIn("178秒", messages[1])
+        self.assertIn("等待检查登录状态", messages[-1])
+
+    async def test_missing_credentials_do_not_bypass_pause_or_budget(self):
+        self.adapter.credentials_present = False
+        self.store.pause(self.clock.now(), "test", self.clock.now() + 86400)
+        with self.assertRaises(StopRun):
+            await self.session.ensure_ready(manual=True)
+        self.assertEqual(self.adapter.calls, [])
+        self.clock.timestamp += 86401
+        self.store.resume(self.clock.now())
+        self.reset_session()
+        self.config.daily_requests_pilot = 1
+        await self.gate.call("test", self.adapter.sync_cookies)
+        with self.assertRaises(StopRun):
+            await self.session.ensure_ready(manual=True)
+        self.assertEqual(self.adapter.login_windows, 0)
+
     async def test_search_returns_twenty_but_only_five_details_and_fifty_comments_each(self):
         await self.run_until_stop()
         self.assertEqual(self.store.complete_count(), 5)
@@ -203,12 +264,12 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(self.store.get("network_until"), self.clock.now())
         self.assertEqual(self.adapter.login_windows, 0)
 
-    async def test_exports_are_joinable_and_have_no_tokens_or_profile_data(self):
+    async def test_exports_include_user_id_but_no_tokens_or_nicknames(self):
         await self.run_until_stop()
         path = export_data(self.store, self.config, self.clock.now())
         text = "".join(p.read_text(encoding="utf-8-sig") for p in path.glob("*.csv"))
         self.assertNotIn("DEMO_TOKEN", text)
-        self.assertNotIn("PRIVATE_DEMO_USER", text)
+        self.assertIn("PRIVATE_DEMO_USER", text)
         self.assertNotIn("不应导出", text)
         self.assertNotIn("not-collected", text)
         with zipfile.ZipFile(path / "research.xlsx") as archive:
@@ -218,7 +279,7 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(manifest["counts"]["notes"], 5)
         self.assertEqual(manifest["counts"]["comments"], 250)
 
-    async def test_daily_search_is_global_across_keywords_and_restarts(self):
+    async def test_daily_note_limit_still_blocks_restart_before_search(self):
         self.config.keywords = ["甲", "乙"]
         await self.run_until_stop()
         self.reset_session()

@@ -48,6 +48,22 @@ def retry_after(value, now):
 
 
 def classify_response(status, headers, body, now):
+    try:
+        return _classify_response(status, headers, body, now)
+    except ProtocolError as exc:
+        exc.diagnostic.update(stage="response", http_status=status,
+                              body_type=type(body).__name__)
+        if isinstance(body, dict):
+            code = str(body.get("code", ""))
+            # Only numeric platform codes; never copy arbitrary messages or values.
+            if code.lstrip("-").isdigit() and len(code) <= 16:
+                exc.diagnostic["platform_code"] = code
+            exc.diagnostic["data_type"] = type(body.get("data")).__name__
+            exc.diagnostic["success_type"] = type(body.get("success")).__name__
+        raise
+
+
+def _classify_response(status, headers, body, now):
     """Return validated outer data; never put a response body in exceptions or logs."""
     headers = {str(k).lower(): str(v) for k, v in headers.items()}
     if status == 401:
@@ -104,7 +120,7 @@ class MediaCrawlerAdapter:
         os.chmod(profile, 0o700)
         self.playwright = await async_playwright().start()
         try:
-            options = {"user_data_dir": str(profile), "headless": False}
+            options = {"user_data_dir": str(profile), "headless": False, "chromium_sandbox": True}
             if self.config.browser_channel != "chromium":
                 options["channel"] = self.config.browser_channel
             self.context = await self.playwright.chromium.launch_persistent_context(**options)
@@ -135,6 +151,11 @@ class MediaCrawlerAdapter:
         if not self.context or not self.page or self.page.is_closed():
             raise BrowserDisconnected("browser_disconnected")
 
+    async def has_auth_credentials(self):
+        """Local cookie inspection only; presence does not prove authentication."""
+        await self.sync_cookies()
+        return bool(self.cookies.get("web_session") and self.cookies.get("a1"))
+
     async def sync_cookies(self):
         self._check_browser()
         try:
@@ -156,9 +177,9 @@ class MediaCrawlerAdapter:
             else:
                 signed = self.signer.sign_headers_post(uri=request.path, cookies=cookie_string, payload=request.data)
         except Exception as exc:
-            raise ProtocolError("signing_dependency_error") from exc
+            raise ProtocolError("signing_dependency_error", stage="signing") from exc
         if not all(signed.get(key) for key in ["x-s", "x-t", "x-s-common"]):
-            raise ProtocolError("missing_signature_headers")
+            raise ProtocolError("missing_signature_headers", stage="signing")
         url = "https://edith.xiaohongshu.com" + request.path
         headers = {**signed, "User-Agent": self.user_agent, "Accept": "application/json",
                    "Origin": "https://www.xiaohongshu.com", "Referer": "https://www.xiaohongshu.com/"}

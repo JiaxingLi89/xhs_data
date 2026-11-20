@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import random
+import math
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from .errors import (AuthExpired, BrowserDisconnected, NetworkFailure, ProtocolError,
                      RiskBlocked, StaleLink, StopRun, Unavailable)
@@ -15,44 +18,67 @@ class RequestGate:
         self.store, self.config, self.clock = store, config, clock
         self.progress = progress
         self.run_notes = set()
+        self.run_requests = 0
         self.day = local_day(clock.now(), config.timezone)
-        self.deadline = min(clock.now() + config.run_timeout_seconds,
-                            next_midnight(clock.now(), config.timezone))
+        self.deadline = clock.now() + config.run_timeout_seconds
+        if config.continuous_daily:
+            self.deadline = float("inf")
+        elif config.quota_mode == "daily":
+            self.deadline = min(self.deadline, next_midnight(clock.now(), config.timezone))
 
     def preflight(self):
         now = self.clock.now()
         self.store.check_pause(now)
-        if now >= self.deadline or local_day(now, self.config.timezone) != self.day:
+        if self.config.continuous_daily:
+            return  # The asynchronous request wait handles daily quota exhaustion.
+        if now >= self.deadline or (self.config.quota_mode == "daily" and local_day(now, self.config.timezone) != self.day):
             raise StopRun("run_window_finished")
-        if self.store.count_requests(self.day) >= self.config.daily_requests:
-            raise StopRun("daily_request_limit")
+        if self.run_requests >= self.config.requests_per_run:
+            raise StopRun("per_run_request_limit")
+        self.store.check_request_budget(now, local_day(now, self.config.timezone), self.config)
 
-    async def wait(self):
-        announced = False
+    async def wait(self, kind="request"):
+        labels = {"auth_check": "检查登录状态", "login_page": "打开登录页面",
+                  "search": "搜索笔记", "detail": "获取笔记正文", "comments": "获取一级评论"}
+        label = labels.get(kind, "执行下一次请求")
         while True:
             self.preflight()
             remaining = self.store.get("next_request_at", 0) - self.clock.now()
+            if self.config.continuous_daily:
+                now = self.clock.now()
+                if self.store.count_requests(local_day(now, self.config.timezone)) >= self.config.daily_requests:
+                    release = next_midnight(now, self.config.timezone)
+                    expected = datetime.fromtimestamp(release, ZoneInfo(self.config.timezone))
+                    self.progress("每日请求额度已用完；等待至%s（%s）自动继续，剩余约%d秒。等待期间不发送请求。" %
+                                  (expected.isoformat(), self.config.timezone, math.ceil(release - now)))
+                    await self.clock.sleep(min(30, release - now))
+                    continue
             if remaining <= 0:
                 return
             if self.clock.now() + remaining >= self.deadline:
                 raise StopRun("run_window_finished")
-            if not announced:
-                self.progress("限速等待约%d秒；已保存当前进度。" % remaining)
-                announced = True
+            expected = datetime.fromtimestamp(self.clock.now() + remaining, ZoneInfo(self.config.timezone))
+            self.progress("当前步骤：等待%s；剩余约%d秒，预计%s（%s）继续。"
+                          "这是程序设置的请求间隔，不是平台限流通知。"
+                          "请求时间与配额已保存；数据库中按当前规则完成的笔记：%d篇。"
+                          "请保持浏览器与终端打开。" %
+                          (label, math.ceil(remaining), expected.strftime("%H:%M:%S"),
+                           self.config.timezone, self.store.complete_count()))
             await self.clock.sleep(min(30, remaining))
 
     async def call(self, kind, operation, note_id=None, key=""):
         self.preflight()
-        if note_id and note_id not in self.run_notes and len(self.run_notes) >= self.config.notes_per_run:
+        if not self.config.continuous_daily and note_id and note_id not in self.run_notes and len(self.run_notes) >= self.config.notes_per_run:
             raise StopRun("per_run_note_limit")
         retry_key = "retry:" + hashlib.sha256((kind + ":" + (note_id or "") + ":" + key).encode()).hexdigest()
         if self.store.get(retry_key, 0) >= 2:
             self.store.pause(self.clock.now(), "network_retry_exhausted")
             raise StopRun("network_retry_exhausted")
-        await self.wait()
+        await self.wait(kind)
         now = self.clock.now()
         interval = random.uniform(*self.config.request_interval_seconds)
-        request_id = self.store.reserve_request(self.day, now, kind, note_id, self.config, now + interval)
+        request_id = self.store.reserve_request(local_day(now, self.config.timezone), now, kind, note_id, self.config, now + interval)
+        self.run_requests += 1
         if note_id:
             self.run_notes.add(note_id)
         try:
@@ -78,7 +104,10 @@ class RequestGate:
             self.store.finish_request(request_id, "unavailable")
             self.store.set("network_streak", 0)
             raise
-        except ProtocolError:
+        except ProtocolError as exc:
+            exc.diagnostic.setdefault("stage", "request")
+            exc.diagnostic.update(request_kind=kind, request_id=request_id)
+            self.store.set("last_protocol_error", {"at": self.clock.now(), **exc.diagnostic})
             self.store.finish_request(request_id, "protocol_error")
             self.store.pause(self.clock.now(), "protocol_error")
             raise
@@ -116,19 +145,18 @@ class SessionManager:
         if self.store.get("auth_waiting", False) and not manual:
             raise StopRun("waiting_for_login: run login")
         await self.open()
-        try:
-            await self.check()
-            self.store.set("auth_waiting", False)
-            return
-        except AuthExpired:
-            pass
-        # One fresh read of the existing browser cookies. A network error is NOT caught as auth failure.
-        try:
-            await self.check()
-            self.store.set("auth_waiting", False)
-            return
-        except AuthExpired:
-            pass
+        # Inspect the shared cookie jar locally; absence cannot authenticate.
+        # Existing credentials still require server verification and may be refreshed once.
+        for _ in range(2):
+            if not await self.adapter.has_auth_credentials():
+                self.notify("未发现完整登录凭证，跳过无效登录检查；准备按现有限速打开登录页面。")
+                break
+            try:
+                await self.check()
+                self.store.set("auth_waiting", False)
+                return
+            except AuthExpired:
+                pass
         if self.auth_recoveries >= 1:
             self.store.set("auth_waiting", True)
             raise StopRun("login_failed_again")

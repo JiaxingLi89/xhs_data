@@ -1,0 +1,31 @@
+{
+  "source_commit": "75db124d170b45067fd7f587724780d8413c5d0a",
+  "note": "Copied working tree including uncommitted improvements; hashes identify exact source files. No data or credentials copied.",
+  "source_sha256": {
+    "config.json": "717e5fbec803a42ffbde450c552039d52972505a0e93b504c2203b9dc0b4f0e9",
+    "pyproject.toml": "b8ddc01ea173b024820372dc185ac90d20ad8e6d4e5cf69d441065b1ea382247",
+    "requirements-live.txt": "bb2a40d349afd1d7482cc6bca0be9fe353d79317666a504785feb5835686683f",
+    "upstream.lock.json": "1cd5626e7807efa23941847856aacf932be35a356fa59de08fabbe05bf61b1b2",
+    ".gitignore": "2bdb4d46b81c8117769a2c8feadee7e3a4210dfbba5c52737a3b2439ba5b6026",
+    "xhs_research/store.py": "9529b36bac9deac2bfb5722fcf8abf81c8d6f561eec1436d6faf0d18ee31a8de",
+    "xhs_research/config.py": "21efe2267cc0610b2f2c9856d2ed59839305cf1d5790a1b5dd1b2300cd39f59d",
+    "xhs_research/adapter.py": "526840b95abb6dcb9d72818b7478d91958de2816eb105f7eff52d5e1d2dabe90",
+    "xhs_research/control.py": "577d7cc99fa55c17999ca9d9beac4b671f725b36fd80ffbc471ae270c3d61d6e",
+    "xhs_research/__init__.py": "173bc6f4f102cb96522e406e82f5bf609d2661270fa12fbe245bb0a198f26575",
+    "xhs_research/export.py": "6cbabe65d1781cb3949a27c1cfcba7d96720be1cc2bcb7f8b0bcfe022609c91c",
+    "xhs_research/runtime.py": "ddde5ab60e0d9ba58cc5be77d7fdad8c3491a3a591de5b2746bc63a61b59a113",
+    "xhs_research/engine.py": "646e7694570091204a315e7b6298a2b8105f68edc84bcd9368887303264266f8",
+    "xhs_research/cli.py": "ba5c2dbe3dcb07be5d6f3e24923034d5800b8c740297c6b774a09a1a00d57071",
+    "xhs_research/errors.py": "61b9f4d2ccee69f92ebd6f7d6fe0bf14f98d679b6c06245be1e5b1bf8f45f907",
+    "xhs_research/schedule.py": "a79e95e1eeb755a4fbdcc73cce3065ea2d7030112eda9b528c79fdbeaeeb19e6",
+    "xhs_research/demo.py": "54f6bf2207e105bccb5ba6f7a52d60df1ccb7caaaa41ad1dccfac327e73b917c",
+    "xhs_research/__main__.py": "76fa916e93e0ae1a6c1bb51dcc0bcf289c014e9f760a47165f8a84401ccf41d7",
+    "xhs_research/mediacrawler_protocol.py": "3b8ab8046bf1fa8da3ef65ae28933ab3125ea0fd2b92268904e30d91603b100d",
+    "xhs_research/validation.py": "bbf989b0ea7c7448be381d2a7acc8343ef03ebbc8ff65b3b466090f4aa37fff4",
+    "tests/__init__.py": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "tests/test_transport.py": "edaa51fb45bf2db9d793101f609293f2804d8f4093f3bb86e02907771bd56ce2",
+    "tests/test_collector.py": "f0720dfa1f905b3a2822eb3843b0a4d7b16aeb994c10dceecffde507f672087d",
+    "third_party/MediaCrawler.LICENSE": "fb1bc55b2b1890836e007dd489b4fdb2382eb4cceb7dd1ee1a1c0110e033b582",
+    "third_party/README.md": "3d62cb8547bd8484d50d9e01f04b4b130e478ec0d8ad980a14c8ce1711eb3cde"
+  }
+}
