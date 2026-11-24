@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 data/
 exports/
+totalresearch.xlsx
 demo_output/
 schedule/
 *.egg-info/

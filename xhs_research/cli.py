@@ -21,6 +21,7 @@ from .export import export_data
 from .runtime import Clock, local_day, process_lock
 from .schedule import create_schedule, scheduled_slot
 from .store import Store
+from .total import total_note_ids
 from .promotion import classify_all
 from .promotion_review import review_export, review_import, review_menu
 
@@ -99,14 +100,24 @@ async def collect(config, store, command, scheduled=False):
     adapter = MediaCrawlerAdapter(config, store, clock)
     session = SessionManager(adapter, gate, store, config, clock, notify)
     engine = Engine(config, store, session, clock)
-    initial_complete = store.complete_count()
+    initial_complete_ids = {row[0] for row in store.db.execute("SELECT note_id FROM notes WHERE state='complete'")}
     reason = "本批正常结束"
     print("本批开始（配额模式见 quota_mode，today 字段为自然日统计）：" + json.dumps(quota_report(store, config, clock.now()), ensure_ascii=False))
     try:
         if store.get("synthetic_demo"):
             raise SetupError("模拟数据库不能用于实采，请使用独立的 data_dir。")
+        if config.total_research_file is not None:
+            ids = total_note_ids(config.total_research_file)
+            store.load_external_note_ids(ids)
+            print("已读取外部总表：%s；跳过其中 %d 个帖子 ID。" % (config.total_research_file, len(ids)))
         if scheduled and config.quota_mode == "rolling":
             raise StopRun("滚动配额模式仅支持手动开启批次；已有定时任务不会执行采集")
+        store.prepare_comment_backfill(clock.now(), config)
+        ready_complete_ids = {row[0] for row in store.db.execute("SELECT note_id FROM notes WHERE state='complete'")}
+        reopened = len(initial_complete_ids - ready_complete_ids)
+        if reopened:
+            print("原已完成的 %d 篇旧帖已转入评论补采；已有正文和评论保留，当前完整完成数会暂时下降。" % reopened)
+        initial_complete_ids = ready_complete_ids
         store.prepare_identity_backfill(clock.now())
         engine.preflight()
         if scheduled:
@@ -140,9 +151,10 @@ async def collect(config, store, command, scheduled=False):
         try:
             await session.close()
         finally:
-            print("本批结束：处理笔记 %d 篇；新增完成 %d 篇；受控请求 %d 次；累计完成 %d 篇；原因：%s。" % (
-                len(gate.run_notes), store.complete_count() - initial_complete, gate.run_requests,
-                store.complete_count(), stop_description(reason)))
+            final_complete_ids = {row[0] for row in store.db.execute("SELECT note_id FROM notes WHERE state='complete'")}
+            print("本批结束：处理笔记 %d 篇；本批完成 %d 篇（含旧帖补采完成）；受控请求 %d 次；当前完整完成 %d 篇；原因：%s。" % (
+                len(gate.run_notes), len(final_complete_ids - initial_complete_ids), gate.run_requests,
+                len(final_complete_ids), stop_description(reason)))
             print("当前配额与异常状态：" + json.dumps(quota_report(store, config, clock.now()), ensure_ascii=False))
             if config.continuous_daily:
                 print("持续运行模式会自动等待每日额度；本次已因上述原因结束。审核、登录或异常处理后需手动运行；额度释放不会解除暂停。")

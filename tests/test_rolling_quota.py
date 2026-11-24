@@ -55,7 +55,7 @@ class RollingTests(unittest.IsolatedAsyncioTestCase):
         self.new_batch()
         self.assertEqual(await self.run_batch(), 'per_run_note_limit')
         self.assertEqual(self.store.complete_count(), 10)
-        self.assertEqual(self.store.db.execute('SELECT count(*) FROM comments').fetchone()[0], 500)
+        self.assertEqual(self.store.db.execute('SELECT count(*) FROM comments').fetchone()[0], 600)
         self.assertEqual(len({c[2] for c in self.adapter.calls if c[1] == 'detail'}), 10)
         self.assertGreaterEqual(self.adapter.calls[previous_length][0] - previous_call, 120)
         self.assertEqual(len([c for c in self.adapter.calls if c[1] == 'search']), 2)

@@ -23,7 +23,7 @@ class IdentityStoreMixin:
             if self.get('identity_backfill_prepared', False):
                 return 0
             added = 0
-            for row in self.db.execute('SELECT note_id,detail FROM notes WHERE detail IS NOT NULL').fetchall():
+            for row in self.db.execute('SELECT note_id,detail FROM notes WHERE detail IS NOT NULL AND note_id NOT IN (SELECT note_id FROM external_note_ids)').fetchall():
                 missing = self.db.execute(
                     'SELECT 1 FROM comments WHERE note_id=? AND identity_observed_at IS NULL LIMIT 1',
                     (row['note_id'],)).fetchone()
@@ -38,7 +38,7 @@ class IdentityStoreMixin:
     def next_identity_job(self):
         return self.db.execute(
             "SELECT j.*,n.token,n.source FROM identity_jobs j JOIN notes n USING(note_id) "
-            "WHERE j.state IN ('pending','running') ORDER BY j.created_at,j.rowid LIMIT 1").fetchone()
+            "WHERE j.state IN ('pending','running') AND j.note_id NOT IN (SELECT note_id FROM external_note_ids) ORDER BY j.created_at,j.rowid LIMIT 1").fetchone()
 
     def save_identity_detail(self, note_id, detail, now):
         with self.transaction():
@@ -98,7 +98,7 @@ class IdentityStoreMixin:
             elif not cursor or self.db.execute('SELECT 1 FROM identity_cursors WHERE note_id=? AND cursor=?',
                                                (note_id, cursor)).fetchone():
                 self.finish_identity_job(note_id, now, 'repeated_cursor')
-            elif pages >= max_pages:
+            elif max_pages is not None and pages >= max_pages:
                 self.finish_identity_job(note_id, now, 'comment_page_limit')
             elif not comments:
                 self.finish_identity_job(note_id, now, 'empty_page_with_more')

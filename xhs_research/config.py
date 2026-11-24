@@ -28,8 +28,8 @@ class Config:
     rolling_requests_limit: int = 3000
     notes_per_run: int = 5
     request_interval_seconds: list = field(default_factory=lambda: [120, 300])
-    comments_per_note: int = 50
-    max_comment_pages: int = 20
+    comments_per_note: int | None = None
+    max_comment_pages: int | None = None
     candidate_low_watermark: int = 20
     network_retry_seconds: int = 900
     login_wait_seconds: int = 600
@@ -37,6 +37,7 @@ class Config:
     browser_channel: str = "chrome"
     data_dir: str = "data"
     export_dir: str = "exports"
+    total_research_path: str | None = None
     root: Path = field(default_factory=Path.cwd, repr=False)
 
     @classmethod
@@ -74,7 +75,7 @@ class Config:
                      "comments_per_note", "max_comment_pages", "candidate_low_watermark",
                      "network_retry_seconds", "login_wait_seconds", "run_timeout_seconds"]:
             value = getattr(self, name)
-            if name in {"daily_notes_pilot", "daily_notes_formal"} and value is None:
+            if name in {"daily_notes_pilot", "daily_notes_formal", "comments_per_note", "max_comment_pages"} and value is None:
                 continue
             if type(value) is not int or value < 1:
                 raise ValueError(name)
@@ -91,6 +92,10 @@ class Config:
             value = getattr(self, name)
             if not isinstance(value, str) or not value or Path(value).is_absolute() or ".." in Path(value).parts:
                 raise ValueError(name)
+        if self.total_research_path is not None:
+            value = self.total_research_path
+            if not isinstance(value, str) or not value or Path(value).is_absolute() or ".." in Path(value).parts:
+                raise ValueError("total_research_path")
         if self.state_dir == self.root or self.output_dir == self.root or self.state_dir == self.output_dir:
             raise ValueError("data/export directories must be separate")
 
@@ -101,6 +106,10 @@ class Config:
     @property
     def output_dir(self):
         return (self.root / self.export_dir).resolve()
+
+    @property
+    def total_research_file(self):
+        return (self.root / self.total_research_path).resolve() if self.total_research_path else None
 
     @property
     def daily_notes(self):
@@ -116,6 +125,6 @@ class Config:
 
     @property
     def sampling_version(self):
-        data = json.dumps([self.keywords, self.sort, self.comments_per_note], ensure_ascii=False)
+        data = json.dumps([self.keywords, self.sort, self.comments_per_note, self.max_comment_pages], ensure_ascii=False)
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 

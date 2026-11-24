@@ -59,6 +59,7 @@ class Store(IdentityStoreMixin):
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.execute("PRAGMA busy_timeout=5000")
+        self.db.execute("CREATE TEMP TABLE external_note_ids(note_id TEXT PRIMARY KEY)")
         try:
             has_meta = self.db.execute("SELECT 1 FROM sqlite_master WHERE name='meta'").fetchone()
             version = self.get('schema_version', 1) if has_meta else 0
@@ -91,9 +92,22 @@ class Store(IdentityStoreMixin):
                                 if name not in columns:
                                     self.db.execute('ALTER TABLE comments ADD COLUMN ' + name + ' ' + kind)
                             self.set('schema_version', 3)
+            self.migrate_browser_cooldown()
         except BaseException:
             self.close()
             raise
+
+    def migrate_browser_cooldown(self):
+        # One-time policy migration; keep the pause until a manual resume.
+        with self.transaction():
+            if self.get("browser_cooldown_2h_migrated", False):
+                return
+            pause = self.get("pause")
+            if pause and pause.get("reason") == "browser_page_restricted":
+                since = pause.get("since")
+                if isinstance(since, (int, float)):
+                    self.set("pause", {**pause, "until": since + 7200})
+            self.set("browser_cooldown_2h_migrated", True)
 
     def close(self):
         self.db.close()
@@ -213,7 +227,12 @@ class Store(IdentityStoreMixin):
         return self.db.execute("SELECT count(*) FROM notes WHERE state='complete'").fetchone()[0]
 
     def pending_count(self):
-        return self.db.execute("SELECT count(*) FROM notes WHERE state IN ('pending','comments')").fetchone()[0]
+        return self.db.execute("SELECT count(*) FROM notes WHERE state IN ('pending','comments') AND note_id NOT IN (SELECT note_id FROM external_note_ids)").fetchone()[0]
+
+    def load_external_note_ids(self, note_ids):
+        with self.transaction():
+            self.db.execute("DELETE FROM external_note_ids")
+            self.db.executemany("INSERT OR IGNORE INTO external_note_ids VALUES(?)", ((note_id,) for note_id in note_ids))
 
     def register_keywords(self, config):
         for keyword in config.keywords:
@@ -229,6 +248,8 @@ class Store(IdentityStoreMixin):
         with self.transaction():
             inserted = 0
             for rank, item in enumerate(items, 1):
+                if self.db.execute("SELECT 1 FROM external_note_ids WHERE note_id=?", (item["id"],)).fetchone():
+                    continue
                 result = self.db.execute("INSERT OR IGNORE INTO notes(note_id,token,source,found_at) VALUES(?,?,?,?)",
                                          (item["id"], item["token"], item["source"], now))
                 inserted += result.rowcount
@@ -236,14 +257,64 @@ class Store(IdentityStoreMixin):
                                 (item["token"], item["source"], item["id"]))
                 self.db.execute("INSERT OR IGNORE INTO sources VALUES(?,?,?,?,?,?,?,?)",
                                 (item["id"], job["keyword"], job["sort"], job["page"], rank, now, job["search_id"], version))
-            empty = 0 if inserted else job["empty_pages"] + 1
+            # A page of already-known notes can still lead to new notes later.
+            empty = 0 if items else job["empty_pages"] + 1
             self.db.execute("UPDATE keywords SET page=page+1,exhausted=?,empty_pages=?,last_used=? WHERE keyword=? AND sort=?",
                             (int(not has_more or empty >= 2), empty, now, job["keyword"], job["sort"]))
 
+    def prepare_comment_backfill(self, now, config):
+        """One-time upgrade, called only by collection under the worker lock."""
+        if config.comments_per_note is not None or config.max_comment_pages is not None:
+            return
+        if self.get("comment_backfill_prepared", False):
+            return
+        rows = self.db.execute("SELECT note_id,state FROM notes WHERE note_id NOT IN (SELECT note_id FROM external_note_ids) AND ("
+                               "(state='complete' AND reason='comment_cap') OR "
+                "(state='needs_review' AND reason='comment_page_limit'))").fetchall()
+        if rows:
+            backup_path = self.path.with_name('research.pre-all-comments-' + uuid4().hex + '.sqlite3')
+            backup = sqlite3.connect(str(backup_path))
+            try:
+                self.db.backup(backup)
+            finally:
+                backup.close()
+            os.chmod(backup_path, 0o600)
+        with self.transaction():
+            self.set('comment_backfill_ids', [r['note_id'] for r in rows])
+            self.set('comment_backfill_previously_complete', [r['note_id'] for r in rows if r['state'] == 'complete'])
+            for row in rows:
+                self.db.execute("DELETE FROM cursors WHERE note_id=?", (row['note_id'],))
+                self.db.execute("UPDATE notes SET state='comments',cursor='',pages=0,reason='',finished_at=NULL "
+                                "WHERE note_id=?", (row['note_id'],))
+            self.set('comment_backfill_prepared', True)
+            self.event(now, 'comment_backfill_prepared:%d' % len(rows))
+
+    def next_comment_backfill(self):
+        ids = self.get('comment_backfill_ids', [])
+        if not ids:
+            return None
+        return self.db.execute("SELECT * FROM notes WHERE note_id IN (" + ','.join('?' for _ in ids) +
+                               ") AND state IN ('comments','needs_link') AND note_id NOT IN (SELECT note_id FROM external_note_ids) ORDER BY found_at,rowid LIMIT 1", ids).fetchone()
+
+    def collection_count(self):
+        # A previously counted sample must not be replaced just because its
+        # comment upgrade is incomplete. complete_count remains the quality count.
+        ids = self.get('comment_backfill_previously_complete', [])
+        if not ids:
+            return self.complete_count()
+        return self.db.execute("SELECT count(*) FROM notes WHERE state='complete' OR note_id IN (" +
+                               ','.join('?' for _ in ids) + ")", ids).fetchone()[0]
+
     def next_note(self, day, daily_limit=None):
+        backfill = self.next_comment_backfill()
+        if backfill is not None:
+            if daily_limit is not None and self.count_daily_notes(day) >= daily_limit and not self.db.execute(
+                    "SELECT 1 FROM daily_notes WHERE day=? AND note_id=?", (day, backfill['note_id'])).fetchone():
+                return None
+            return backfill
         if daily_limit is not None and self.count_daily_notes(day) >= daily_limit:
-            return self.db.execute("SELECT * FROM notes WHERE state IN ('pending','comments') AND note_id IN (SELECT note_id FROM daily_notes WHERE day=?) ORDER BY found_at,rowid LIMIT 1", (day,)).fetchone()
-        return self.db.execute("SELECT * FROM notes WHERE state IN ('pending','comments') ORDER BY found_at,rowid LIMIT 1").fetchone()
+            return self.db.execute("SELECT * FROM notes WHERE state IN ('pending','comments') AND note_id NOT IN (SELECT note_id FROM external_note_ids) AND note_id IN (SELECT note_id FROM daily_notes WHERE day=?) ORDER BY found_at,rowid LIMIT 1", (day,)).fetchone()
+        return self.db.execute("SELECT * FROM notes WHERE state IN ('pending','comments') AND note_id NOT IN (SELECT note_id FROM external_note_ids) ORDER BY found_at,rowid LIMIT 1").fetchone()
 
     def save_detail(self, note_id, detail, now):
         detail = {**detail, "identity_observed_at": now}
@@ -259,20 +330,21 @@ class Store(IdentityStoreMixin):
         with self.transaction():
             existing = {row[0] for row in self.db.execute("SELECT comment_id FROM comments WHERE note_id=?", (note_id,))}
             count = len(existing)
-            truncated_page = len({item["id"] for item in comments} - existing) > max(0, config.comments_per_note - count)
+            cap = config.comments_per_note
+            truncated_page = cap is not None and len({item["id"] for item in comments} - existing) > max(0, cap - count)
             for item in comments:
-                if count >= config.comments_per_note:
+                if cap is not None and count >= cap:
                     break
                 count += self.upsert_comment(note_id, item, now)
             self.db.execute("INSERT OR IGNORE INTO cursors VALUES(?,?)", (note_id, requested_cursor))
             pages = self.db.execute("SELECT pages FROM notes WHERE note_id=?", (note_id,)).fetchone()[0] + 1
-            if count >= config.comments_per_note:
+            if cap is not None and count >= cap:
                 state, reason = "complete", "comment_cap" if has_more or truncated_page else "exhausted"
             elif not has_more:
                 state, reason = "complete", "exhausted"
             elif not next_cursor or self.db.execute("SELECT 1 FROM cursors WHERE note_id=? AND cursor=?", (note_id, next_cursor)).fetchone():
                 state, reason = "needs_review", "repeated_cursor"
-            elif pages >= config.max_comment_pages:
+            elif config.max_comment_pages is not None and pages >= config.max_comment_pages:
                 state, reason = "needs_review", "comment_page_limit"
             elif not comments:
                 state, reason = "needs_review", "empty_page_with_more"
@@ -282,7 +354,12 @@ class Store(IdentityStoreMixin):
                             (next_cursor, pages, state, reason, now if state != "comments" else None, note_id))
 
     def link_refresh_job(self):
-        return self.db.execute("SELECT n.note_id,n.refresh_attempts,s.keyword,s.sort,s.page,s.search_id,0 AS empty_pages FROM notes n JOIN sources s ON n.note_id=s.note_id WHERE n.state='needs_link' ORDER BY s.discovered_at DESC LIMIT 1").fetchone()
+        backfill = self.next_comment_backfill()
+        if backfill is not None and backfill['state'] == 'needs_link':
+            return self.db.execute("SELECT n.note_id,n.refresh_attempts,s.keyword,s.sort,s.page,s.search_id,0 AS empty_pages "
+                                   "FROM notes n JOIN sources s USING(note_id) WHERE n.note_id=? ORDER BY s.discovered_at DESC LIMIT 1",
+                                   (backfill['note_id'],)).fetchone()
+        return self.db.execute("SELECT n.note_id,n.refresh_attempts,s.keyword,s.sort,s.page,s.search_id,0 AS empty_pages FROM notes n JOIN sources s ON n.note_id=s.note_id WHERE n.state='needs_link' AND n.note_id NOT IN (SELECT note_id FROM external_note_ids) ORDER BY s.discovered_at DESC LIMIT 1").fetchone()
 
     def refresh_links(self, job, items, now):
         with self.transaction():

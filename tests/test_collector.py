@@ -80,7 +80,7 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
         after = dict(self.store.db.execute("SELECT * FROM notes WHERE note_id='n0'").fetchone())
         self.assertEqual(after["state"], "complete")
         self.assertEqual(after["detail"], before["detail"])
-        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments WHERE note_id='n0'").fetchone()[0], 50)
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments WHERE note_id='n0'").fetchone()[0], 60)
 
     async def test_missing_credentials_skip_checks_but_preserve_wait_and_confirmation(self):
         self.adapter.credentials_present = False
@@ -115,11 +115,11 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
             await self.session.ensure_ready(manual=True)
         self.assertEqual(self.adapter.login_windows, 0)
 
-    async def test_search_returns_twenty_but_only_five_details_and_fifty_comments_each(self):
+    async def test_search_returns_twenty_but_only_five_details_and_sixty_comments_each(self):
         await self.run_until_stop()
         self.assertEqual(self.store.complete_count(), 5)
         self.assertEqual(self.store.db.execute("SELECT count(*) FROM notes").fetchone()[0], 20)
-        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments").fetchone()[0], 250)
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments").fetchone()[0], 300)
         self.assertEqual(len([c for c in self.adapter.calls if c[1] == "detail"]), 5)
         for first, second in zip(self.adapter.calls, self.adapter.calls[1:]):
             self.assertGreaterEqual(second[0] - first[0], 120)
@@ -134,6 +134,19 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
         await self.run_until_stop()
         self.assertEqual(self.store.count_requests(day), count)
         self.assertEqual(self.store.complete_count(), 5)
+
+    async def test_missing_total_stops_before_network_requests(self):
+        self.config.total_research_path = "missing-totalresearch.xlsx"
+        with self.assertRaises(SetupError):
+            await self.engine.run()
+        self.assertEqual(self.adapter.calls, [])
+
+    async def test_corrupt_total_stops_before_network_requests(self):
+        self.config.total_research_path = "totalresearch.xlsx"
+        self.config.total_research_file.write_bytes(b"invalid workbook")
+        with self.assertRaisesRegex(SetupError, "请检查手动放入"):
+            await self.engine.run()
+        self.assertEqual(self.adapter.calls, [])
 
     async def test_request_budget_interrupts_comments_then_next_day_resumes_cursor(self):
         self.config.daily_requests_pilot = 4  # auth + search + detail + first comment page
@@ -208,7 +221,7 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
         calls = [c for c in self.adapter.calls if c[1] == "comments"]
         self.assertEqual(calls[1][3], calls[2][3])
         self.assertEqual(self.store.complete_count(), 5)
-        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments").fetchone()[0], 250)
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM comments").fetchone()[0], 300)
 
     async def test_rate_limit_blocks_entire_run_and_manual_login_does_not_clear_it(self):
         self.adapter.failures["comments"] = [RiskBlocked("rate_limited", 86400)]
@@ -277,7 +290,7 @@ class CollectorTests(unittest.IsolatedAsyncioTestCase):
                 ElementTree.fromstring(archive.read(name))
         manifest = json.loads((path / "manifest.json").read_text())
         self.assertEqual(manifest["counts"]["notes"], 5)
-        self.assertEqual(manifest["counts"]["comments"], 250)
+        self.assertEqual(manifest["counts"]["comments"], 300)
 
     async def test_daily_note_limit_still_blocks_restart_before_search(self):
         self.config.keywords = ["甲", "乙"]

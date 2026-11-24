@@ -4,21 +4,21 @@
   ],
   "sort": "general",
   "timezone": "Asia/Shanghai",
-  "stage": "pilot",
+  "stage": "formal",
   "target_notes": 1500,
   "pilot_notes": 50,
-  "reviewed_notes": 0,
+  "reviewed_notes": 10,
   "daily_notes_pilot": null,
   "daily_notes_formal": null,
   "daily_requests_pilot": 700,
   "daily_requests_formal": 700,
-  "notes_per_run": 5,
+  "notes_per_run": 15,
   "request_interval_seconds": [
     120,
     300
   ],
-  "comments_per_note": 50,
-  "max_comment_pages": 20,
+  "comments_per_note": null,
+  "max_comment_pages": null,
   "candidate_low_watermark": 20,
   "network_retry_seconds": 900,
   "login_wait_seconds": 600,
@@ -27,7 +27,8 @@
   "data_dir": "data",
   "export_dir": "exports",
   "quota_mode": "daily",
-  "continuous_daily": true,
-  "requests_per_run": 30,
-  "rolling_requests_limit": 3000
+  "continuous_daily": false,
+  "requests_per_run": 90,
+  "rolling_requests_limit": 3000,
+  "total_research_path": "totalresearch.xlsx"
 }

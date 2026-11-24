@@ -150,7 +150,7 @@ class MediaCrawlerAdapter:
 
     def _check_browser(self):
         if self.external_risk:
-            raise RiskBlocked("browser_page_restricted", 86400)
+            raise RiskBlocked("browser_page_restricted", 7200)
         if not self.context or not self.page or self.page.is_closed():
             raise BrowserDisconnected("browser_disconnected")
 
